@@ -63,5 +63,5 @@ for i in range(n_epochs):
     print("................................................................")
 
 print("Training Finished!")
-model.classifier_model.save("./MNIST_classifier_weights.h5")
-model.autoencoder_model.save("./MNIST_ae_weights.h5")
+model.classifier_model.save("./Saved_Models/MNIST_classifier_weights.h5")
+model.autoencoder_model.save("./Saved_Models/MNIST_autoenc_weights.h5")
