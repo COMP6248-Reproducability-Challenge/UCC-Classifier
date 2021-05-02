@@ -96,7 +96,7 @@ class UCC_Model_MNIST(object):
         # set optimiser and loss function
         #-----------------------------------------------------------------------
         optimiser = Adam(lr = learning_rate)
-        self.classifier_model.compile(optimizer=optimiser, loss=["categorical_crossentropy", "mse"], metrica=["accuracy"], loss_weights=[0.5, 0.5])
+        self.classifier_model.compile(optimizer=optimiser, loss=["categorical_crossentropy", "mse"], metrics=["accuracy"], loss_weights=[0.5, 0.5])
 
 
     # defining kde function for kde layer
@@ -113,7 +113,7 @@ class UCC_Model_MNIST(object):
         sample_points = backend.constant(np.tile(x, [batch_size, backend.int_shape(features)[1], 1]))
 
         a = backend.constant((np.sqrt(2 * np.pi * sigma**2)**-1))
-        b = backend.constant((2 * sigma**2)**-1)
+        b = backend.constant((-2 * sigma**2)**-1)
 
         output_list = []
         for i in range(num_features):
@@ -125,7 +125,7 @@ class UCC_Model_MNIST(object):
 
             normalisaton_coefficient = backend.reshape(backend.sum(output, axis=1), (-1,1))
 
-            output_normed = output / backend.tile(normalisaton_coefficient, [1, backend.int_shape(output)])
+            output_normed = output / backend.tile(normalisaton_coefficient, [1, backend.int_shape(output)[1]])
             output_list.append(output_normed)
 
         concatenated_output = backend.concatenate(output_list, axis=-1)
@@ -137,7 +137,7 @@ class UCC_Model_MNIST(object):
     def residual_layer(self, x, filters, n, channels, sample=False, reverse=False):
         """residual layer definition
         
-        if the reverse parameter is set to True, it executes the reverse block"""
+        if the reverse parameter is set to True, it executes the reverse"""
 
         for i in range(n):
             if i == 0:
@@ -149,11 +149,11 @@ class UCC_Model_MNIST(object):
 
     # defining residual block defined in residual layer
     # --------------------------------------------------------------------------
-    def residual_block(self, x, filters, first=False, sample=False, reverse=False):
+    def residual_block(self, x0, filters, first=False, sample=False, reverse=False):
         
         kwargs_1 = {"kernel_size": (3, 3),
                     "padding": "same",
-                    "bias_initializer":Constant(value=0.1),
+                    "bias_initializer": Constant(value=0.1),
                     "use_bias": True,
                     "kernel_initializer": glorot_uniform(),
                     "kernel_regularizer": None
@@ -171,7 +171,7 @@ class UCC_Model_MNIST(object):
                         kwargs_1["strides"] = (2, 2)
                         kwargs_2["strides"] = (2, 2)
 
-                    x0 = Activation("relu")(x)
+                    x0 = Activation("relu")(x0)
 
                     x1 = Conv2D(filters, **kwargs_1)(x0)
                     x1 = Activation("relu")(x1)
@@ -183,19 +183,22 @@ class UCC_Model_MNIST(object):
 
                     x0_shape = x0.shape.as_list()[1:-1]
                     x1_shape = x1.shape.as_list()[1:-1]
+                    x0_filter = x0.shape.as_list()[-1]
+                    x1_filter = x1.shape.as_list()[-1]
+
                     if x0_shape != x1_shape:
-                        x0 = Conv2D(x0.shape.as_list()[-1], **kwargs_2)(x0)
+                            x0 = Conv2D(x0_filter, **kwargs_2)(x0)
 
-                    if x0.shape.as_list()[-1] != x1.shape.as_list()[-1]:
-                        t_shape = (x1_shape[0], x1_shape[1], x0.shape.as_list()[-1], 1)
-                        x0 = Reshape(t_shape)(x0)
-                        padding_size = x1.shape.as_list()[-1] - x0.shape.as_list()[-1]
-                        x0 = ZeroPadding3D(((0, 0), (0, 0), (0, padding_size)))(x0)
-                        t_shape = (x1_shape[0], x1_shape[1], x1.shape.as_list()[-1])
-                        x0 = Reshape(t_shape)(x0)
+                    if x0_filter != x1_filter:
+                            t_shape = (x1_shape[0], x1_shape[1], x0_filter, 1)
+                            x0 = Reshape(t_shape)(x0)
+                            padding_size = x1_filter - x0_filter
+                            x0 = ZeroPadding3D(((0, 0), (0, 0), (0, padding_size)))(x0)
+                            t_shape = (x1_shape[0], x1_shape[1], x1_filter)
+                            x0 = Reshape(t_shape)(x0)
 
-            if reverse == True:
-                x0 = Activation("relu")(x)
+            elif reverse == True:
+                x0 = Activation("relu")(x0)
 
                 # do appropriate step to increase size (upsampling)
                 if sample == True:
@@ -209,7 +212,7 @@ class UCC_Model_MNIST(object):
                     x0 = Conv2D(filters, **kwargs_2)(x0)
 
         else:
-            x1 = Activation("relu")(x)
+            x1 = Activation("relu")(x0)
             x1 = Conv2D(filters, **kwargs_1)(x1)
             x1 = Activation("relu")(x1)
             x1 = Conv2D(filters, **kwargs_1)(x1)
