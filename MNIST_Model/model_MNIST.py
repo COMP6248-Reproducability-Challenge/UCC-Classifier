@@ -147,6 +147,7 @@ class UCC_Model_MNIST(object):
 
         return x
 
+
     # defining residual block defined in residual layer
     # --------------------------------------------------------------------------
     def residual_block(self, x0, filters, first=False, sample=False, reverse=False):
