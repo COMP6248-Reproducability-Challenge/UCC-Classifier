@@ -10,7 +10,7 @@ from keras.initializers import Constant, glorot_uniform
 from keras import backend
 import numpy as np
 
-class UCC_Model_MNIST(object):
+class Keras_Model(object):
 
     # defining models
     #---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ class UCC_Model_MNIST(object):
         x_enc = Activation("relu")(x_enc)
         x_enc = Flatten()(x_enc)
         encoded_output = Dense(encoded_size, activation="sigmoid", use_bias=False, kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_enc)
-        self._encoder_model = Model(inputs=image_input, outputs=encoded_output)
+        self._patch_model = Model(inputs=image_input, outputs=encoded_output)
 
 
         # building the decoder
@@ -40,12 +40,12 @@ class UCC_Model_MNIST(object):
         x_dec = self.residual_layer(x_dec, 2, 1, 16, sample=False, reverse=True)
         x_dec = Activation("relu")(x_dec)
         decoded_output = Conv2D(1, (3, 3), padding="same", bias_initializer=Constant(0.1), kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_dec)
-        self._decoder_model = Model(inputs=encoded_input, outputs=decoded_output)
+        self._image_generation_model = Model(inputs=encoded_input, outputs=decoded_output)
 
 
         # build total autoencoder model
         #-----------------------------------------------------------------------
-        autoencoded_output = self._decoder_model(encoded_output)
+        autoencoded_output = self._image_generation_model(encoded_output)
         self._autoencoder_model = Model(inputs=image_input, outputs=autoencoded_output)
 
 
@@ -60,7 +60,7 @@ class UCC_Model_MNIST(object):
             original_input_list.append(input_tmp) # add input image to list
 
             # Run encoder model
-            output_tmp = self._encoder_model(input_tmp)
+            output_tmp = self._patch_model(input_tmp)
             output_tmp = Reshape((1, -1))(output_tmp)
             encoded_output_list.append(output_tmp) # add encoded image to list
 
@@ -251,7 +251,7 @@ class UCC_Model_MNIST(object):
         return predicted_label
 
     def generate_image_from_feature(self, batch_inputs=None):
-        predicted_label = self._decoder_model.predict_on_batch(batch_inputs)
+        predicted_label = self._image_generation_model.predict_on_batch(batch_inputs)
         
         return predicted_label
 
@@ -265,7 +265,7 @@ class UCC_Model_MNIST(object):
         return predicted_features
 
     def predict_on_batch_data_patches(self, batch_inputs=None):
-        predicted_patches = self._encoder_model.predict_on_batch(batch_inputs)
+        predicted_patches = self._patch_model.predict_on_batch(batch_inputs)
         
         return predicted_patches
 
