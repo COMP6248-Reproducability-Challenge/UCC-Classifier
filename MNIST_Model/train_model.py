@@ -1,11 +1,12 @@
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
 from dataset import Dataset
 from model_MNIST import UCC_Model_MNIST
 
 # number of epochs:
-n_epochs = 10
+n_epochs = 1000000
 
 # the min/max number of possible classes
 min_classes = 1
@@ -31,6 +32,12 @@ model = UCC_Model_MNIST(image_size=28, num_images=32, num_classes=num_classes, l
 split_dataset = Dataset(num_instances=num_instances, num_samples_per_class=num_samples_per_class, digit_arr=subsets_elements_arr, ucc_start=min_classes, ucc_end=max_classes)
 
 # train
+ae_train_loss = []
+ucc_train_loss = []
+total_train_loss = []
+ae_test_loss = []
+ucc_test_loss = []
+total_test_loss = []
 for i in range(n_epochs):
     print("Epoch:", str(i+1)+"/"+str(n_epochs))
     print("Getting Next Batch...")
@@ -38,17 +45,19 @@ for i in range(n_epochs):
 
     print("Training on Batch...")
     [train_loss_weighted, train_ucc_loss, train_ae_loss, train_ucc_acc, train_ae_acc] = model.classifier_model.train_on_batch(train_batch[0], train_batch[1])
-    # can write these losses to a file to generate plots later
-
+    ae_train_loss.append(train_ae_loss)
+    ucc_train_loss.append(train_ucc_loss)
+    total_train_loss.append(train_loss_weighted)
     
-    # do validation on every 10th epoch
-    if i % 10 == 0:
-        print()
-        print("Getting Validation Batch...")
-        validation_batch = split_dataset.next_batch_val()
-        print("Testing on Batch...")
-        [val_loss_weighted, val_ucc_loss, val_ae_loss, val_ucc_acc, val_ae_acc] = model.classifier_model.test_on_batch(validation_batch[0], validation_batch[1])
-        # can write these losses to a file to generate plots later
+    # do validation
+    print()
+    print("Getting Validation Batch...")
+    validation_batch = split_dataset.next_batch_val()
+    print("Testing on Batch...")
+    [val_loss_weighted, val_ucc_loss, val_ae_loss, val_ucc_acc, val_ae_acc] = model.classifier_model.test_on_batch(validation_batch[0], validation_batch[1])
+    ae_test_loss.append(val_ae_loss)
+    ucc_test_loss.append(val_ucc_loss)
+    total_test_loss.append(val_loss_weighted)
 
     print()
     print("Subset:                   ", subsets_elements_arr)
@@ -63,5 +72,21 @@ for i in range(n_epochs):
     print("................................................................")
 
 print("Training Finished!")
-model.classifier_model.save("./Saved_Models/MNIST_classifier_weights.h5")
-model.autoencoder_model.save("./Saved_Models/MNIST_autoenc_weights.h5")
+
+print("Saving Model...")
+model.classifier_model.save("./Saved_Models/MNIST_classifier_weights_1mil.h5")
+model.autoencoder_model.save("./Saved_Models/MNIST_autoenc_weights_1mil.h5")
+print("Model Saved!")
+
+print("Saving Loss Values...")
+data = {
+    "ae_train_loss": ae_train_loss,
+    "ucc_train_loss": ucc_train_loss,
+    "total_train_loss": total_train_loss,
+    "ae_test_loss": ae_test_loss,
+    "ucc_test_loss": ucc_test_loss,
+    "total_test_loss": total_test_loss
+}
+df = pd.DataFrame(data)
+df.to_csv("losses_1mil.csv", index=False)
+print("Saved!")
