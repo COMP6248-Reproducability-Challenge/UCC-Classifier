@@ -46,7 +46,7 @@ class UCC_Model_MNIST(object):
         # build total autoencoder model
         #-----------------------------------------------------------------------
         autoencoded_output = self.decoder_model(encoded_output)
-        self.autoencoder_model = Model(inputs=image_input, outputs=autoencoded_output)
+        self._autoencoder_model = Model(inputs=image_input, outputs=autoencoded_output)
 
 
         # running the encoder/autoencoder models to get out img and feature list
@@ -75,7 +75,7 @@ class UCC_Model_MNIST(object):
         concatenated_encoded = layers.concatenate(encoded_output_list, axis=1)
         concatenated_autoencoded = layers.concatenate(autoencoded_output_list, axis=1)
         x_kde = layers.Lambda(self.kernel_density_estimation, arguments={"num_bins":num_KDE_bins, "sigma":0.1, "batch_size":batch_size, "num_features":encoded_size})(concatenated_encoded)
-        self.kde_distribution_model = Model(inputs=original_input_list, outputs=x_kde)
+        self._distribution_model = Model(inputs=original_input_list, outputs=x_kde)
 
 
         # build classification model
@@ -84,19 +84,19 @@ class UCC_Model_MNIST(object):
         x_class = Dense(384, activation="relu", kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_kde)
         x_class = Dense(192, activation="relu", kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_class)
         class_output = Dense(num_classes, activation="softmax", kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_class)
-        self.classifier_model = Model(inputs=original_input_list, outputs=[class_output, concatenated_autoencoded])
+        self._classification_model = Model(inputs=original_input_list, outputs=[class_output, concatenated_autoencoded])
 
 
         # define some more models (might be able to delete some of these)
         #-----------------------------------------------------------------------
         self.features_model = Model(inputs=original_input_list, outputs=concatenated_encoded)
-        self.ucc_classifier_model = Model(inputs=original_input_list, outputs=class_output)
+        self._ucc_model = Model(inputs=original_input_list, outputs=class_output)
 
 
         # set optimiser and loss function
         #-----------------------------------------------------------------------
         optimiser = Adam(lr = learning_rate)
-        self.classifier_model.compile(optimizer=optimiser, loss=["categorical_crossentropy", "mse"], metrics=["accuracy"], loss_weights=[0.5, 0.5])
+        self._classification_model.compile(optimizer=optimiser, loss=["categorical_crossentropy", "mse"], metrics=["accuracy"], loss_weights=[0.5, 0.5])
 
 
     # defining kde function for kde layer
@@ -220,3 +220,56 @@ class UCC_Model_MNIST(object):
 
         x0 = Add()([x0, x1])
         return x0
+
+	def train_on_batch_data(self, batch_inputs=None, batch_outputs=None):
+		stats = self._classification_model.train_on_batch(batch_inputs, batch_outputs)
+
+		return stats
+
+	def test_on_batch_data(self, batch_inputs=None, batch_outputs=None):
+		stats = self._classification_model.test_on_batch(batch_inputs, batch_outputs)
+
+		return stats
+
+	def predict_on_batch_data(self, batch_inputs=None):
+		predicted_label = self._classification_model.predict_on_batch(batch_inputs)
+
+		return predicted_label
+
+	def predict_ucc_on_batch_data(self, batch_inputs=None):
+		predicted_label = self._ucc_model.predict_on_batch(batch_inputs)
+
+		return predicted_label
+
+	def predict_on_batch_data_ae(self, batch_inputs=None):
+		predicted_label = self._autoencoder_model.predict_on_batch(batch_inputs)
+
+		return predicted_label
+
+	def generate_image_from_feature(self, batch_inputs=None):
+		predicted_label = self._image_generation_model.predict_on_batch(batch_inputs)
+
+		return predicted_label
+
+	def predict_on_batch_data_distribution(self, batch_inputs=None):
+		predicted_dist = self._distribution_model.predict_on_batch(batch_inputs)
+
+		return predicted_dist
+
+	def predict_on_batch_data_features(self, batch_inputs=None):
+		predicted_features = self._features_model.predict_on_batch(batch_inputs)
+
+		return predicted_features
+
+	def predict_on_batch_data_patches(self, batch_inputs=None):
+		predicted_patches = self._patch_model.predict_on_batch(batch_inputs)
+
+		return predicted_patches
+
+	def save_model_weights(self, model_weight_save_path=None):
+		self._classification_model.save_weights(model_weight_save_path)
+		self._autoencoder_model.save_weights(model_weight_save_path[:-3]+'__ae.h5')
+
+	def load_saved_weights(self, weights_path=None):
+		self._classification_model.load_weights(weights_path)
+		self._autoencoder_model.load_weights(weights_path[:-3]+'__ae.h5')
