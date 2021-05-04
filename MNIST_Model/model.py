@@ -1,3 +1,4 @@
+# AUTHORS: Sai Pandian, Mohammed Mosuily, Sameen Islam 
 
 from keras import layers
 from keras.optimizers import Adam

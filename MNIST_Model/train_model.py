@@ -1,3 +1,5 @@
+# AUTHORS: Sai Pandian, Mohammed Mosuily, Sameen Islam 
+
 import numpy as np
 import pandas as pd
 
