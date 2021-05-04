@@ -14,25 +14,25 @@ class Keras_Model(object):
 
     # defining models
     #---------------------------------------------------------------------------
-    def __init__(self, image_size=28, num_images=2, num_classes=10, learning_rate=0.001, num_KDE_bins=None, encoded_size=10, batch_size=None):
+    def __init__(self, patch_size=28, num_instances=2, num_classes=10, learning_rate=0.001, num_bins=None, num_features=10, batch_size=None):
         """UCC Model for MNIST data clustering"""
 
         # building the encoder
         #-----------------------------------------------------------------------
-        image_input = Input((image_size, image_size, 1))
+        image_input = Input((patch_size, patch_size, 1))
         x_enc = Conv2D(16, (3, 3), padding="same", bias_initializer=Constant(0.1), kernel_initializer=glorot_uniform(), kernel_regularizer=None)(image_input)
         x_enc = self.residual_layer(x_enc, 2, 1, 16, sample=False, reverse=False)
         x_enc = self.residual_layer(x_enc, 4, 1, 16, sample=True, reverse=False)
         x_enc = self.residual_layer(x_enc, 8, 1, 16, sample=True, reverse=False)
         x_enc = Activation("relu")(x_enc)
         x_enc = Flatten()(x_enc)
-        encoded_output = Dense(encoded_size, activation="sigmoid", use_bias=False, kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_enc)
+        encoded_output = Dense(num_features, activation="sigmoid", use_bias=False, kernel_initializer=glorot_uniform(), kernel_regularizer=None)(x_enc)
         self._patch_model = Model(inputs=image_input, outputs=encoded_output)
 
 
         # building the decoder
         #-----------------------------------------------------------------------
-        encoded_input = Input((encoded_size,))
+        encoded_input = Input((num_features,))
         x_dec = Dense(6272, bias_initializer=Constant(0.1), kernel_initializer=glorot_uniform(), kernel_regularizer=None)(encoded_input)
         x_dec = Reshape((7, 7, 128))(x_dec)
         x_dec = self.residual_layer(x_dec, 8, 1, 16, sample=True, reverse=True)
@@ -54,9 +54,9 @@ class Keras_Model(object):
         original_input_list = []
         encoded_output_list = []
         autoencoded_output_list = []
-        for i in range(num_images):
+        for i in range(num_instances):
             # get input
-            input_tmp = Input((image_size, image_size, 1))
+            input_tmp = Input((patch_size, patch_size, 1))
             original_input_list.append(input_tmp) # add input image to list
 
             # Run encoder model
@@ -66,7 +66,7 @@ class Keras_Model(object):
 
             # Run autoencoder model
             autoencoded_output_tmp = self._autoencoder_model(input_tmp)
-            autoencoded_output_tmp = Reshape((1, image_size, image_size, 1))(autoencoded_output_tmp)
+            autoencoded_output_tmp = Reshape((1, patch_size, patch_size, 1))(autoencoded_output_tmp)
             autoencoded_output_list.append(autoencoded_output_tmp) # add autoencoded image to list
 
 
@@ -74,7 +74,7 @@ class Keras_Model(object):
         #-----------------------------------------------------------------------
         concatenated_encoded = layers.concatenate(encoded_output_list, axis=1)
         concatenated_autoencoded = layers.concatenate(autoencoded_output_list, axis=1)
-        x_kde = layers.Lambda(self.kernel_density_estimation, arguments={"num_bins":num_KDE_bins, "sigma":0.1, "batch_size":batch_size, "num_features":encoded_size})(concatenated_encoded)
+        x_kde = layers.Lambda(self.kernel_density_estimation, arguments={"num_bins":num_bins, "sigma":0.1, "batch_size":batch_size, "num_features":num_features})(concatenated_encoded)
         self._distribution_model = Model(inputs=original_input_list, outputs=x_kde)
 
 
@@ -276,3 +276,11 @@ class Keras_Model(object):
     def load_saved_weights(self, weights_path=None):
         self._classification_model.load_weights(weights_path)
         self._autoencoder_model.load_weights(weights_path[:-3]+'__ae.h5')
+
+    @property
+    def metrics_names(self):
+        return self._classification_model.metrics_names
+    
+    @property
+    def yaml_file(self):
+        return self._classification_model.to_yaml()

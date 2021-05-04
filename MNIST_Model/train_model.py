@@ -25,7 +25,7 @@ subsets_elements_arr = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 batch_size = num_classes * num_samples_per_class
 
 # define model
-model = Keras_Model(image_size=28, num_images=32, num_classes=num_classes, learning_rate=1e-4, num_KDE_bins=11, encoded_size=10, batch_size=batch_size)
+model = Keras_Model(patch_size=28, num_instances=32, num_classes=num_classes, learning_rate=1e-4, num_bins=11, num_features=10, batch_size=batch_size)
 
 # define dataset
 split_dataset = Dataset(num_instances=num_instances, num_samples_per_class=num_samples_per_class, digit_arr=subsets_elements_arr, ucc_start=min_classes, ucc_end=max_classes)
