@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 from dataset import Dataset
 from model_MNIST import UCC_Model_MNIST
