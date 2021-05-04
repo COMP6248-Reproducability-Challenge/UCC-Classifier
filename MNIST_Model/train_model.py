@@ -48,15 +48,16 @@ for i in range(n_epochs):
     ucc_train_loss.append(train_ucc_loss)
     total_train_loss.append(train_loss_weighted)
     
-    # do validation
-    print()
-    print("Getting Validation Batch...")
-    validation_batch = split_dataset.next_batch_val()
-    print("Testing on Batch...")
-    [val_loss_weighted, val_ucc_loss, val_ae_loss, val_ucc_acc, val_ae_acc] = model.classifier_model.test_on_batch(validation_batch[0], validation_batch[1])
-    ae_test_loss.append(val_ae_loss)
-    ucc_test_loss.append(val_ucc_loss)
-    total_test_loss.append(val_loss_weighted)
+    # do validation every 100th epoch
+    if i % 100 == 0:
+        print()
+        print("Getting Validation Batch...")
+        validation_batch = split_dataset.next_batch_val()
+        print("Testing on Batch...")
+        [val_loss_weighted, val_ucc_loss, val_ae_loss, val_ucc_acc, val_ae_acc] = model.classifier_model.test_on_batch(validation_batch[0], validation_batch[1])
+        ae_test_loss.append(val_ae_loss)
+        ucc_test_loss.append(val_ucc_loss)
+        total_test_loss.append(val_loss_weighted)
 
     print()
     print("Subset:                   ", subsets_elements_arr)
@@ -64,10 +65,6 @@ for i in range(n_epochs):
     print("Train UCC Accuracy:       ", train_ucc_acc)
     print("Train UCC Loss:           ", train_ucc_loss)
     print("Train AE Loss:            ", train_ae_loss)
-    print("Validation Loss Weighted: ", val_loss_weighted)
-    print("Validation UCC Accuracy:  ", val_ucc_acc)
-    print("Validation UCC Loss:      ", val_ucc_loss)
-    print("Validation AE Loss:       ", val_ae_loss)
     print("................................................................")
 
 print("Training Finished!")
