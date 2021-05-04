@@ -222,7 +222,7 @@ class Keras_Model(object):
         return x0
 
 
-    # functions to train and test model
+    # functions to train and test model (Taken from original code)
     # --------------------------------------------------------------------------
 
     def train_on_batch_data(self, batch_inputs=None, batch_outputs=None):
