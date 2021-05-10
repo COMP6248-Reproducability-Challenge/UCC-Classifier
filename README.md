@@ -17,5 +17,18 @@ instance learning (MIL) algorithm in which bags of instances (data points) are
 labeled with a "unique class count (UCC)" bag-level label, rather than any
 instance-level labels.
 
-The algorithm is evaluated on MNIST, CIFAR10, CIFAR100 and on binary breast
-cancer segmentation.
+The algorithm is evaluated on MNIST dataset.
+
+To train the model, first create the virtual environment using conda and activate it.
+```sh
+conda env create -f environment.yml
+conda activate deep_learning
+```
+
+Now you can train the model contained in the MNIST\_Model folder using:
+```sh
+python train_model.py
+```
+
+The model can be evaluated using the original paper authors' code contained in
+the MNIST\_Model/Original\_Paper\_Code folder.
