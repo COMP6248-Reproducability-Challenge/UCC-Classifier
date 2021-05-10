@@ -1,0 +1,230 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2019_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{lipsum}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage[tmargin=0.59in, bmargin=0.7in, lmargin=0.92in, rmargin=0.92in]{geometry}
+
+\title{Reproducing A Novel Weakly Supervised Clustering Framework and Evaluating Practical Applicability}
+
+% Authors must not appear in the submitted version. They should be hidden
+% as long as the \iclrfinalcopy macro remains commented out below.
+% Non-anonymous submissions will be rejected without review.
+
+
+\author{Sameen Islam, Mohammed Mossuily \& Saivignesh Pandian \\
+Department of Electronics and Computer Science\\
+University of Southampton \\
+Southampton, United Kingdom\\
+\texttt{\{si1u19, mtm1g19, ssp1e17\}@soton.ac.uk} }
+
+% \And
+% Mohammed Mossuily \\
+% Department of ECS\\
+% University of Southampton \\
+% Southampton, United Kingdom\\
+% \texttt{mtm1g19@soton.ac.uk} \\
+
+% \And
+% Saivignesh Pandian \\
+% Department of ECS\\
+% University of Southampton \\
+% Southampton, United Kingdom\\
+% \texttt{ssp1e17@soton.ac.uk}
+% }
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+In this investigation we seek to replicate the results of a previously proposed weakly supervised clustering model that exploits unique class count labels. We independently reconstruct the model presented and reproduce the results on the MNIST dataset, achieving a 98.37\% clustering accuracy. Furthermore, we bridge the gap between the proposed model and a future practical deployment by exploring practical limitations of the model with training and implementation.
+\end{abstract}
+
+% \section{Outline}
+% \begin{itemize}
+%     \item Introduction - Sameen
+%     \item Mathematical Background - Mohammed
+%     \item Project Scope - Mohammed
+%     \item Reproducing the Model - Sameen
+%     \begin{itemize}
+%         \item Model Architecture - Sameen
+%         \item Training the Model - Sameen
+%     \end{itemize}
+%     \item Applying the Model to MNIST - Sai
+%     \begin{itemize}
+%         \item Autoencoder Model - Sai
+%         \item KDE Model - Sai
+%         \item Reproduced Results - Sai
+%         \item Comparison with Other Models - Sai 
+%     \end{itemize}
+%     \item Efficacy of Project - Sameen
+%     \item Conclusions - Mohammed
+% \end{itemize}
+
+\section{Introduction} %[MM]
+% The paper we replicate aims to perform semantic segmentation on histological lymph node sections to identify breast cancer in a weakly supervised manner.  The problem this paper tackles provides a path to developing a system where clinicians can readily identify cancerous regions from images of histological lymph node sections without requiring specialist expertise. It further tries to develop on the state-of-the-art by not requiring these humans to hand label image pixels of histological slides to mark cancerous regions. In this paper, we verify the effectiveness of the model on a baseline dataset and provide a critical discussion of the gains purported by \cite{Oner2019}.
+
+In \cite{Oner2019}, they present a weakly supervised model which is trained to predict the number of unique classes in a dataset. They argue that a model trained to do so must be learning some underlying patterns in the data to inform it of the number of classes. Thus, such a model should after training, be able to be re-purposed to predict the class labels on specific instances of data. This is presented to be of great use in fields such as the medical profession, in which one might know the number of cancerous cells in an image, but not be able to identify which pixels in the image correspond to such a cell. 
+
+% Thus, the paper aims to provide the proof of concept for a path to developing a system where clinicians can readily identify cancerous regions from images of histological lymph node sections without requiring specialist expertise or hand labelled image pixels of histological slides. 
+
+% The problem is framed as a multiple instance learning (MIL) problem where bags of instances and bag level labels are used as input data, whereby the goal of the model is to identify the number of unique classes of instances in the bag. The model can then be used to label instances of data. As such, it is possible to generalise to other domains.
+
+\section{Experimental Methodology}
+While the specific code for the model is provided and available\footnote{http://bit.ly/uniqueclasscount}, we found that it was poorly documented and improperly motivated. Thus in this investigation, we completely re-implemented the model \footnote{https://github.com/COMP6248-Reproducability-Challenge/UCC-Classifier}, which allowed us to explore the architecture and understand the motivations behind certain choices. 
+
+We seek to provide some reasoning behind the model choices made in the original paper, as well as bridge the gap in knowledge needed to implement and deploy such a model. For example, as the original paper makes no reference to the training time and difficulty, we seek to analyse whether such a model can be considered practical when the computational costs are also taken into account. Finally, we seek to replicate the results found in the original paper, and compare with other novel techniques to draw conclusions about the efficacy of this presented model.
+% \section{Project Scope} %[MM]
+
+For this investigation, we have limited the scope to only reproducing and exploring the presented model on the MNIST dataset. \cite{Oner2019} make no mention as to the training difficulty of their model. However, we found that the training times for useful results were unreasonably long on the MNIST dataset, and training on other datasets such as CIFAR or CAMELYON were considerably slower. As such, only MNIST data is used in this project.
+
+\section{Reproducing the Model} %[SI]
+% The original paper experiments on the MNIST, CIFAR10, CIFAR100 and other datasets on breast cancer metastases. In this paper, we limit the scope of our project to the successful reproduction of the results obtained by training our model on the MNIST dataset. \cite{Oner2019} provide their Keras/TensorFlow based implementation via Google Drive, although it is very sparsely documented. Due to lack of architectural decision justifications in the ucc model, we re-implement the weakly supervised clustering framework then experiment with its model configuration to verify and reproduce the results claimed on the MNIST dataset.
+
+\subsection{Model Architecture} %[SI]
+\label{sec:architecture}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/modelarc.pdf}
+    \caption{Model architecture showing a flat feature vector is obtained from the encoder, which itself takes in a $28\times28$ image. This flat vector is then passed to a decoder and a kernel density estimator, which then reconstructs and makes a softmax prediction of the UCC label respectively.}
+    \label{fig:final}
+\end{figure}
+
+% The weakly supervised clustering framework consists of an end-to-end trained deep convolutional autoencoder and a classifier. Figure \ref{fig:final} shows the architecture schematic of this framework. The auto-encoder consists of $28\times28$ input layer which is passed through a 2D convolutional layer with a $3\times3$ kernel. These are then passed through a series of wide residual layers, following the architecture created by \cite{zagoruyko2016wide}, before applying a ReLU non-linearity and obtaining a flat vector consisting of encoded features extracted from the original image. A kernel density estimator is then able to infer the underlying distribution characteristics and the result of this estimation is passed to a multi-layer perceptron (MLP) with 2 hidden layers - the first consisting of 384 hidden units and the second consisting of 192 hidden units, both with ReLU activation. These produce an output with softmax over classes, representing the ten different MNIST digits. We simultaneously minimise the decoder loss so that the flat feature vectors produced at the bottleneck is densely packed with relevant information required for accurate classification. The decoder ultimately produces a reconstruction of the original image, but this is unused as its only used for the purposes of minimising loss. The model minimises a weighted sum of classification and auto-encoder losses with the weight being a hyper-parameter.
+
+The weakly supervised clustering framework consists of an end-to-end trained deep convolutional autoencoder and a classifier. Figure \ref{fig:final} shows the architecture schematic of this framework, which can roughly be considered in three parts: the encoder, the decoder and the classifier. The encoder exists to extract features from the input images, and consists of several convolutional layers and wide residual layers, described by \cite{zagoruyko2016wide}. The extracted features are modelled by probability distributions in the Kernel Density Estimation (KDE) layer. These distributions are then fed to an MLP classifier to estimate the number of unique classes in the data. We simultaneously minimise the decoder and classifier loss so that the extracted features are specifically useful for accurate classification. The decoder ultimately produces a reconstruction of the original image, but this is unused as its only used for the purposes of minimising loss. The model minimises a weighted sum of classification and auto-encoder losses with the weight being a hyper-parameter.
+
+% We ask the reader to note we broadly keep in line with the notation used by \cite{Oner2019}. The ucc model consists of three main modules: $\theta_{feature}$, which extracts features from each input image and produces a feature distribution; $\theta_{drn}$ which predicts ucc label; finally, $\theta_{decoder}$ uses the first module to form an auto-encoder used to improve the feature extraction process.
+
+% The input dataset with instances $\mathcal{X} = \{x_1, x_2, \cdots, x_n\}_{i=0}^{n}$ belong to an unknown class. Through assumption of total number of unknown classes, $K$, instances are labelled $\mathcal{L}(x_i) = l_i \in \{1, 2, \cdots, K\}$ where at least one instance in the dataset belongs to one of $K$ classes. The model then predicts a label $\hat{l}_i \rightarrow \mathcal{L}(x_i) = l_i$. This is facilitated by the multiple instance learning problem where data consists of (bag, ucc) or $(\sigma,\eta_{\sigma})$ pairs and the model has to learn a concept which allows the correct prediction of $\hat{l}_i$ from the bag. The ucc $\eta_{\sigma}$ is the total number of unique classes that exist in the bag $\sigma_{\zeta}$. 
+
+% The feature extractor module extracts features from all the instances in the bag $\theta_{feature}(x_i) = \{ f^1, f^2, \cdots, f^J \}_{i=0}^{J}$ where all feature matrices $f^i$ are accumulated for each $x_i$ to feed into the second module $\theta_{drn}$ for performing kernel density estimation (KDE) upon which distribution regression is performed to predict ucc label as a softmax vector $(\tilde{\eta^1_\sigma}, \tilde{\eta^2_\sigma}, \cdots, \tilde{\eta^K_\sigma})$. The loss function used is given in equation \ref{eqn:loss}. The distribution regression loss is minimised using cross-entropy and the auto-encoder loss minimised with mean squared error criterion; both losses are minimised concurrently in this model. 
+
+%% justify different components like autoenc and kde
+
+% \begin{equation}
+% \alpha\left[\sum_{k=1}^{K} \eta_{\sigma}^{k} \log \tilde{\eta}_{\sigma}^{k}\right]+(1-\alpha)\left[\frac{1}{\left|\sigma\right|} \sum_{i=1}^{\left|\sigma\right|}\left(x_{i}-\tilde{x}_{i}\right)^{2}\right]
+% \label{eqn:loss}
+% \end{equation}
+
+% where the hyperparameter $\alpha$ $\in [0,1]$. As we can note from the loss function in \ref{eqn:loss}, the model is trained end-to-end, with the features extracted from the auto-encoder used to automatically perform classification with a multi-layer perceptron (MLP). This attribute of unsupervised classification lends this model to be a part of weakly supervised clustering framework. 
+
+\subsection{Training the Model} % need to mention adam optimiser
+Under the weakly supervised framework, we train the UCC model to predict the number of unique classes in batches of MNIST data. Our model was trained locally using TensorFlow with Python 3.6 using a NVIDIA RTX 2070 GPU. \cite{Oner2019} train their model for 128,000 epochs, which requires $\sim12$ hours of continuous training. When compared to other simple models, this training time is orders of magnitude larger. The UCC model also demands a large amount of memory. During experimentation, we found our system undergoing excessive thrashing, as the model consumed in excess of 60GB of memory. 
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.4]{images/loss_plot.pdf}
+    \caption{Training loss for UCC model monotonically decreasing. The auto-encoder (blue) converges quicker than the classifier (orange).}
+    \label{fig:ucc_loss}
+\end{figure}
+
+Figure \ref{fig:ucc_loss} shows the training with the described loss criterion where we find both plots are noisy. This is usually caused by a high learning rate causing instability or by a large batch size causing class imbalance as new data is seen. We experimented with both of these hyper-parameters, however this effect still persisted.
+
+\section{Applying the Model to MNIST} %[SP]
+
+\subsection{Autoencoder Model} %[SP]
+As explained in Section \ref{sec:architecture}, the total loss of the model is dependent on the weighted sum of losses of the classifier and the autoencoder. This is intuitive, since the autoencoder needs to be able to extract ``useful'' features that the classifier can use to label the data. In this investigation, the autoencoder was trained to reduce the $28\times28$ MNIST images into a flattened list of 10 ``features'', the encoded data.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=1]{images/digits.pdf}
+    \caption{Reconstructed digits from autoencoder, which look very similar to the input images.}
+    \label{fig:digits}
+\end{figure}
+
+The reconstructed digits from the MNIST data are presented in Figure \ref{fig:digits}. We immediately observe that the digits are very similar to the original MNIST data, implying that the small loss we observed in Figure \ref{fig:ucc_loss} for the autoencoder model, has led to its ability to properly encode and decode the data.
+
+The encoded data, i.e. the feature list, could be directly fed into an MLP model for classification. However, investigations found that this produced poor results in classification, likely as a result of the small feature list. A solution is to apply certain transformations to the feature list, to obtain better classification scores. This motivates the use of KDE.
+
+\subsection{Kernel Density Estimation Layer} %[SP]
+
+The KDE Layer is used to construct a probability distribution of the features extracted by the autoencoder model. In this investigation, a Gaussian kernel was used, since no prior knowledge of the extracted features was known. As such, we argue that through central limit theorem, the output of a sufficiently complex encoder model can be weighted using a Gaussian kernel. 
+
+%% Figure for distribution of features
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{images/distributions-crop.pdf}
+    \caption{Distributions created by KDE layer using features from Encoder. Red shows three features distributed in class 1, and green shows three features distributed in class 2.}
+    \label{fig:kde_dens}
+\end{figure}
+
+We can construct a plot of the distribution of different extracted features for different classes. This is presented in Figure \ref{fig:kde_dens}, which shows the way that features $1$, $2$ and $3$ are distributed on classes $1$ (red) and $2$ (green). We immediately observe that there are clear differences in the distributions of features for different classes. This intuitively informs us that the KDE layer can create distributions that can be easily separated into classes, resulting in higher performance of the classsifier when the KDE layer is used.
+
+We might consider whether during inference, we can forego the MLP classifier in favour of directly clustering the distributions using an unsupervised algorithm such as K-Means. One such model is also investigated in this paper.
+
+\subsection{Training and Inference on MNIST} %[SP]
+% As mentioned, we restrict our re-implementation to working with MNIST dataset as baseline. Reproducing the results of the original paper was challenging as \cite{Oner2019} do not provide any details of the specific architectural definition of their used model. The number of epochs the original model was trained for was also very long (128000), and training our re-implemented model took $\sim12$ hours, despite being trained with a Graphical Processing unit (GPU).
+
+The MNIST images are randomly grouped into batches of 32. We refer to these batches as ``bags''. Initially, in the training stage, the model is trained for 128000 epochs to estimate the number of unique classes in the bag. The training set is 50000 images, while the validation step is 10000 images. Early stopping is implemented, but was found to be unnecessary as overfitting on this dataset did not occur. It is possible to not have a separate training and test set, and allow the model to train on the same data upon which it will infer labels, since in the inference stage it is predicting the cluster membership and not the number of unique clusters.
+
+Once trained, the model is used to label given instances of MNIST images into appropriate classes. We find that we achieve a clustering accuracy of \textbf{98.37$\%$}. This is close to the result found by \cite{Oner2019}. We further analyse this result and compare it with existing models in the following Section.
+
+\subsection{Comparison with Other Models} %[SP]
+We find that we can reproduce the clustering accuracy of the model created by \cite{Oner2019} with our re-implemented model. The comparisons to existing models are presented in Table \ref{tab:results}.
+
+\begin{table}[H]
+\centering
+\caption{Clustering Accuracies for different models on MNIST dataset. *Models developed, trained, and tested in this investigation. Other models from other papers are shown as well.}
+\vspace{0.3cm}
+\label{tab:results}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Model}                              & \textbf{Clustering Accuracy} \\ \hline
+UCC Classifier*                             & 98.37\%                      \\ \hline
+UCC Classifier (\cite{Oner2019})            & 98.4\%                       \\ \hline
+Fully Supervised Model (\cite{Oner2019})    & 98.8\%                       \\ \hline
+K-Means with Extracted Features*            & 97.73\%                      \\ \hline
+K-Means with Raw Data (\cite{wang2014optimized})      & 57.2\%                       \\ \hline
+IIC (\cite{ji2019invariant})                   & 98.4\%                       \\ \hline
+\end{tabular}
+\end{table}
+
+We observe that with the same number of epochs and identical hyperparameters, we reproduce the original results. When we compare this model to a fully supervised model representing the upper limit of state of the art neural networks to classify MNIST data, we note that the UCC Classifier presented in this paper produces a clustering accuracy on MNIST that is very close to state of the art supervised approaches. This provides motivation for using the UCC classifier, since it can achieve high performance on weakly supervised data, comparable to a supervised model.
+
+As suggested earlier, the classifier section of the total model (which is a simple MLP after a KDE Layer), may be superfluous during inference, as the output of the KDE distribution could be given directly to a unsupervised model to cluster. This is presented in the table, and we observe that the accuracy is very close to the total model. However, this approach still requires the use of an MLP in the training stage. As explained in Section \ref{sec:architecture}, the loss of the autoencoder is coupled to the loss of the classifier, to ensure that only features that are useful for classification are extracted by the encoder.
+
+When we compare the results of this weakly supervised approach to a fully unsupervised K-Means algorithm applied directly to the raw data, we observe significant increases in performance, motivating the use of this weakly supervised approach. 
+
+Finally, we compare to a state of the art unsupervised approach, presented by \cite{ji2019invariant}. We observe almost identical clustering accuracy compared to their proposed Invariant Information Clustering (IIC) approach, which does not require extensive training, or bag-level labels. This indicates that these novel unsupervised techniques might surpass this UCC Classifier approach in certain domains.
+
+\section{Efficacy of Project}
+
+\cite{Oner2019} present this weakly supervised clustering approach as a proof of concept. They argue that a model trained to predict the unique class count in a bag is learning patterns in the data that could be used to cluster the data into the classes. In this regard, this investigation supports their conclusions. However, we raise concerns over the practical advantage provided by such a model in a real-world setting.
+
+We argue that the long training times ($\sim12$ hours) necessary on commercial hardware to achieve these results limits the efficacy of their presented model. When compared to models such as the IIC model presented by \cite{ji2019invariant}, the clustering accuracy is identical, but the IIC model does not require such extensive training. As such this UCC model's effectiveness is limited somewhat by the computational costs. The effectiveness of this model may vary in different domains, however.
+
+In addition to this, the relative difficulty of reproducing the results presented by \cite{Oner2019} make the use of an identical model challenging. As they do not present specific model sizes, and fail to motivate the reasoning behind the choices made for certain architectures, it is difficult to adapt the model for other domains.
+
+The main claim made by the original paper, however, is valid. And in many instances in which bag-level labels are available, for example in the medical field where the presence of cancerous tissue is known, even if its exact position is not, this model can prove to be superior to unsupervised techniques.
+
+\section{Conclusions}
+In this investigation we have re-implemented the UCC model presented by \cite{Oner2019} and replicated their results for the MNIST Dataset. We have also further investigated the model architecture, including by testing the model without certain components (eg. KDE layer), and provided justification for the choice of certain parts of the model. Finally, we have compared the reproduced results with existing unsupervised and supervised techniques and compared its effectiveness when factors such as the training time and model construction difficulty are considered. We argue that while the model may present benefits on other domains, its practical usefulness is outstripped by state of the art unsupervised techniques on the MNIST dataset.
+
+% --- BIBLIOGRAPHY ---
+\bibliography{iclr2019_conference}
+\bibliographystyle{iclr2019_conference}
+
+\end{document}
