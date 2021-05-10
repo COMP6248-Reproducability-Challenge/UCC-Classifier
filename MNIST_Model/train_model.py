@@ -7,7 +7,7 @@ from dataset import Dataset
 from model import Keras_Model
 
 # number of epochs:
-n_epochs = 1000000
+n_epochs = 128000
 
 # the min/max number of possible classes
 min_classes = 1
@@ -72,8 +72,8 @@ for i in range(n_epochs):
 print("Training Finished!")
 
 print("Saving Model...")
-model._classification_model.save("./Saved_Models/MNIST_classifier_weights_1mil.h5")
-model._autoencoder_model.save("./Saved_Models/MNIST_autoenc_weights_1mil.h5")
+model._classification_model.save("./Saved_Models/MNIST_classifier_weights_128000.h5")
+model._autoencoder_model.save("./Saved_Models/MNIST_autoenc_weights_128000.h5")
 print("Model Saved!")
 
 print("Saving Loss Values...")
@@ -86,5 +86,5 @@ data = {
     "total_test_loss": total_test_loss
 }
 df = pd.DataFrame(data)
-df.to_csv("losses_1mil.csv", index=False)
+df.to_csv("./loss_data/2020_04_05__20_31_24_128000/losses_128000.csv", index=False)
 print("Saved!")
