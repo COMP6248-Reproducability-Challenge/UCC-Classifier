@@ -11,13 +11,14 @@ unique class count.
 
 ![ucc classifier](https://github.com/samisnotinsane/iclr-breast-cancer-classification/blob/main/ucc-classifier.png?raw=true)
 
-
 This paper has proposed a new type of weakly supervised clustering / multiple
 instance learning (MIL) algorithm in which bags of instances (data points) are
 labeled with a "unique class count (UCC)" bag-level label, rather than any
 instance-level labels.
 
 The algorithm is evaluated on MNIST dataset.
+
+## Running the Code
 
 To train the model, first create the virtual environment using conda and activate it.
 ```sh
@@ -32,3 +33,9 @@ python train_model.py
 
 The model can be evaluated using the original paper authors' code contained in
 the MNIST\_Model/Original\_Paper\_Code folder.
+
+
+## Authors
+Sai Pandian
+Sameen Islam
+Mohammed Mosuily
