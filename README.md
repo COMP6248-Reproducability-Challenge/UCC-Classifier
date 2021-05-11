@@ -36,6 +36,6 @@ the MNIST\_Model/Original\_Paper\_Code folder.
 
 
 ## Authors
-Sai Pandian
-Sameen Islam
-Mohammed Mosuily
+* Sai Pandian
+* Sameen Islam
+* Mohammed Mosuily
